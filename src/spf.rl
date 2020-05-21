@@ -1387,10 +1387,11 @@ oops:
 	memcpy(parser->error.near, part, SPF_MIN(sizeof parser->error.near - 1, parser->pe - part));
 
 	if (SPF_DEBUG) {
-		if (isgraph(parser->error.lc))
+		if (isgraph(parser->error.lc)) {
 			SPF_SAY("`%c' invalid near offset %d of `%s'", parser->error.lc, parser->error.lp, parser->error.near);
-		else
+		} else {
 			SPF_SAY("error near offset %d of `%s'", parser->error.lp, parser->error.near);
+		}
 	}
 
 	return 0;
