@@ -524,7 +524,7 @@ DNS_PUBLIC size_t dns_rr_print(void *, size_t, struct dns_rr *, struct dns_packe
 
 
 #define dns_rr_i_new(P, ...) \
-	dns_rr_i_init(&dns_quietinit((struct dns_rr_i){ 0, __VA_ARGS__ }), (P))
+	dns_rr_i_init(dns_quietinit(&(struct dns_rr_i){ 0, __VA_ARGS__ }), (P))
 
 struct dns_rr_i {
 	enum dns_section section;
