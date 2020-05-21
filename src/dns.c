@@ -6595,11 +6595,13 @@ retry:
 	switch (so->state) {
 	case DNS_SO_UDP_INIT:
 		so->state++;
+		/* fall through */
 	case DNS_SO_UDP_CONN:
 		if (0 != connect(so->udp, (struct sockaddr *)&so->remote, dns_sa_len(&so->remote)))
 			goto soerr;
 
 		so->state++;
+		/* fall through */
 	case DNS_SO_UDP_SEND:
 		if (0 > (n = send(so->udp, (void *)so->query->data, so->query->end, 0)))
 			goto soerr;
@@ -6608,6 +6610,7 @@ retry:
 		so->stat.udp.sent.count++;
 
 		so->state++;
+		/* fall through */
 	case DNS_SO_UDP_RECV:
 		if (0 > (n = recv(so->udp, (void *)so->answer->data, so->answer->size, 0)))
 			goto soerr;
@@ -6622,11 +6625,13 @@ retry:
 			goto trash;
 
 		so->state++;
+		/* fall through */
 	case DNS_SO_UDP_DONE:
 		if (!dns_header(so->answer)->tc || so->type == SOCK_DGRAM)
 			return 0;
 
 		so->state++;
+		/* fall through */
 	case DNS_SO_TCP_INIT:
 		if (dns_so_tcp_keep(so)) {
 			so->state = DNS_SO_TCP_SEND;
@@ -6641,6 +6646,7 @@ retry:
 			goto error;
 
 		so->state++;
+		/* fall through */
 	case DNS_SO_TCP_CONN:
 		if (0 != connect(so->tcp, (struct sockaddr *)&so->remote, dns_sa_len(&so->remote))) {
 			if (dns_soerr() != DNS_EISCONN)
@@ -6648,16 +6654,19 @@ retry:
 		}
 
 		so->state++;
+		/* fall through */
 	case DNS_SO_TCP_SEND:
 		if ((error = dns_so_tcp_send(so)))
 			goto error;
 
 		so->state++;
+		/* fall through */
 	case DNS_SO_TCP_RECV:
 		if ((error = dns_so_tcp_recv(so)))
 			goto error;
 
 		so->state++;
+		/* fall through */
 	case DNS_SO_TCP_DONE:
 		/* close unless DNS_RESCONF_TCP_ONLY (see dns_res_tcp2type) */
 		if (so->type != SOCK_STREAM) {
@@ -7269,6 +7278,7 @@ exec:
 	switch (F->state) {
 	case DNS_R_INIT:
 		F->state++;
+		/* fall through */
 	case DNS_R_GLUE:
 		if (R->sp == 0)
 			dgoto(R->sp, DNS_R_SWITCH);
@@ -7295,6 +7305,7 @@ exec:
 		}
 
 		F->state++;
+		/* fall through */
 	case DNS_R_SWITCH:
 		while (F->which < (int)sizeof R->resconf->lookup && R->resconf->lookup[F->which]) {
 			switch (R->resconf->lookup[F->which++]) {
@@ -7339,6 +7350,7 @@ exec:
 		}
 
 		dgoto(R->sp, DNS_R_SERVFAIL);
+		/* fall through */
 	case DNS_R_FILE:
 		if (R->sp > 0) {
 			if (!dns_p_setptr(&F->answer, dns_hosts_query(R->hosts, F->query, &error)))
@@ -7366,6 +7378,7 @@ exec:
 		}
 
 		dgoto(R->sp, DNS_R_SWITCH);
+		/* fall through */
 	case DNS_R_CACHE:
 		error = 0;
 
@@ -7383,16 +7396,19 @@ exec:
 			goto error;
 
 		F->state++;
+		/* fall through */
 	case DNS_R_SUBMIT:
 		if ((error = R->cache->submit(F->query, R->cache)))
 			goto error;
 
 		F->state++;
+		/* fall through */
 	case DNS_R_CHECK:
 		if ((error = R->cache->check(R->cache)))
 			goto error;
 
 		F->state++;
+		/* fall through */
 	case DNS_R_FETCH:
 		error = 0;
 
@@ -7407,6 +7423,7 @@ exec:
 			goto error;
 
 		dgoto(R->sp, DNS_R_SWITCH);
+		/* fall through */
 	case DNS_R_BIND:
 		if (R->sp > 0) {
 			if (!F->query)
@@ -7418,6 +7435,7 @@ exec:
 		R->search = 0;
 
 		F->state++;
+		/* fall through */
 	case DNS_R_SEARCH:
 		/*
 		 * XXX: We probably should only apply the domain search
@@ -7430,11 +7448,13 @@ exec:
 			goto error;
 
 		F->state++;
+		/* fall through */
 	case DNS_R_HINTS:
 		if (!dns_p_setptr(&F->hints, dns_hints_query(R->hints, F->query, &error)))
 			goto error;
 
 		F->state++;
+		/* fall through */
 	case DNS_R_ITERATE:
 		dns_rr_i_init(&F->hints_i, F->hints);
 
@@ -7444,6 +7464,7 @@ exec:
 		F->hints_i.args[0]	= F->hints->end;
 
 		F->state++;
+		/* fall through */
 	case DNS_R_FOREACH_NS:
 		dns_rr_i_save(&F->hints_i);
 
@@ -7459,6 +7480,7 @@ exec:
 
 		/* Assume there are glue records */
 		dgoto(R->sp, DNS_R_FOREACH_A);
+		/* fall through */
 	case DNS_R_RESOLV0_NS:
 		/* Have we reached our max depth? */
 		if (&F[1] >= endof(R->stack))
@@ -7472,6 +7494,7 @@ exec:
 		F->state++;
 
 		dgoto(++R->sp, DNS_R_INIT);
+		/* fall through */
 	case DNS_R_RESOLV1_NS:
 		if (!(len = dns_d_expand(u.host, sizeof u.host, 12, F[1].query, &error)))
 			goto error;
@@ -7488,6 +7511,7 @@ exec:
 		}
 
 		dgoto(R->sp, DNS_R_FOREACH_NS);
+		/* fall through */
 	case DNS_R_FOREACH_A: {
 		struct dns_a a;
 		struct sockaddr_in sin;
@@ -7533,6 +7557,7 @@ exec:
 
 		F->state++;
 	}
+		/* fall through */
 	case DNS_R_QUERY_A:
 		if (dns_so_elapsed(&R->so) >= dns_resconf_timeout(R->resconf))
 			dgoto(R->sp, DNS_R_FOREACH_A);
@@ -7604,6 +7629,7 @@ exec:
 		/* XXX: Should we copy F->answer to R->nodata? */
 
 		dgoto(R->sp, DNS_R_FOREACH_A);
+		/* fall through */
 	case DNS_R_CNAME0_A:
 		if (&F[1] >= endof(R->stack))
 			dgoto(R->sp, DNS_R_FINISH);
@@ -7616,6 +7642,7 @@ exec:
 		F->state++;
 
 		dgoto(++R->sp, DNS_R_INIT);
+		/* fall through */
 	case DNS_R_CNAME1_A:
 		if (!(P = dns_res_merge(F->answer, F[1].answer, &error)))
 			goto error;
@@ -7623,6 +7650,7 @@ exec:
 		dns_p_setptr(&F->answer, P);
 
 		dgoto(R->sp, DNS_R_FINISH);
+		/* fall through */
 	case DNS_R_FINISH:
 		if (!F->answer)
 			goto noanswer;
@@ -7636,6 +7664,7 @@ exec:
 		dns_rr_i_init(&R->smart, F->answer);
 
 		F->state++;
+		/* fall through */
 	case DNS_R_SMART0_A:
 		if (&F[1] >= endof(R->stack))
 			dgoto(R->sp, DNS_R_DONE);
@@ -7706,6 +7735,7 @@ exec:
 		}
 
 		dgoto(R->sp, DNS_R_DONE);
+		/* fall through */
 	case DNS_R_SMART1_A:
 		if (!F[1].answer)
 			goto noanswer;
@@ -7731,6 +7761,7 @@ exec:
 		}
 
 		dgoto(R->sp, DNS_R_SMART0_A);
+		/* fall through */
 	case DNS_R_DONE:
 		if (!F->answer)
 			goto noanswer;
@@ -7750,6 +7781,7 @@ exec:
 			goto error;
 
 		dgoto(R->sp, DNS_R_DONE);
+		/* fall through */
 	default:
 		error	= EINVAL;
 
@@ -8287,11 +8319,13 @@ exec:
 	switch (ai->state) {
 	case DNS_AI_S_INIT:
 		ai->state++;
+		/* fall through */
 	case DNS_AI_S_NEXTAF:
 		if (!dns_ai_nextaf(ai))
 			dns_ai_goto(DNS_AI_S_DONE);
 
 		ai->state++;
+		/* fall through */
 	case DNS_AI_S_NUMERIC:
 		if (1 == dns_inet_pton(AF_INET, ai->qname, &any.a)) {
 			if (ai->af.atype == AF_INET) {
@@ -8315,6 +8349,7 @@ exec:
 			dns_ai_goto(DNS_AI_S_NEXTAF);
 
 		ai->state++;
+		/* fall through */
 	case DNS_AI_S_SUBMIT:
 		assert(ai->res);
 
@@ -8322,11 +8357,13 @@ exec:
 			return error;
 
 		ai->state++;
+		/* fall through */
 	case DNS_AI_S_CHECK:
 		if ((error = dns_res_check(ai->res)))
 			return error;
 
 		ai->state++;
+		/* fall through */
 	case DNS_AI_S_FETCH:
 		if (!(ans = dns_res_fetch_and_study(ai->res, &error)))
 			return error;
@@ -8350,6 +8387,7 @@ exec:
 		ai->i.sort    = &dns_rr_i_order;
 
 		ai->state++;
+		/* fall through */
 	case DNS_AI_S_FOREACH_I:
 		if (!dns_rr_grep(&rr, 1, &ai->i, ai->answer, &error))
 			dns_ai_goto(DNS_AI_S_NEXTAF);
@@ -8384,10 +8422,12 @@ exec:
 		} /* switch() */
 
 		ai->state++;
+		/* fall through */
 	case DNS_AI_S_INIT_G:
 		ai->g_depth = 0;
 
 		ai->state++;
+		/* fall through */
 	case DNS_AI_S_ITERATE_G:
 		dns_strlcpy(ai->g_cname, ai->cname, sizeof ai->g_cname);
 		dns_rr_i_init(&ai->g, ai->glue);
@@ -8396,6 +8436,7 @@ exec:
 		ai->g.type    = ai->af.qtype;
 
 		ai->state++;
+		/* fall through */
 	case DNS_AI_S_FOREACH_G:
 		if (!dns_rr_grep(&rr, 1, &ai->g, ai->glue, &error)) {
 			if (dns_rr_i_count(&ai->g) > 0)
@@ -8420,11 +8461,13 @@ exec:
 			return error;
 
 		ai->state++;
+		/* fall through */
 	case DNS_AI_S_CHECK_G:
 		if ((error = dns_res_check(ai->res)))
 			return error;
 
 		ai->state++;
+		/* fall through */
 	case DNS_AI_S_FETCH_G:
 		if (!(ans = dns_res_fetch_and_study(ai->res, &error)))
 			return error;
@@ -8442,6 +8485,7 @@ exec:
 			dns_ai_goto(DNS_AI_S_FOREACH_I);
 
 		dns_ai_goto(DNS_AI_S_ITERATE_G);
+		/* fall through */
 	case DNS_AI_S_DONE:
 		if (ai->found) {
 			return ENOENT; /* TODO: Just return 0 */
