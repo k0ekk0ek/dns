@@ -382,7 +382,7 @@ void zonerr_init(struct zonerr *rr, struct zonefile *P) {
 
 	# FIXME: Support multiple segments.
 	TXT_type = "TXT"i %{ rr->type = DNS_T_TXT; };
-	TXT_data = string %{ rr->data.txt.len = MIN(rr->data.txt.size - 1, sp - str); memcpy(rr->data.txt.data, str, rr->data.txt.len); };
+	TXT_data = string %{ rr->data.txt.len = MIN((ssize_t)rr->data.txt.size - 1, sp - str); memcpy(rr->data.txt.data, str, rr->data.txt.len); };
 	TXT = TXT_type space+ TXT_data space*;
 
 	SPF_type = "SPF"i %{ rr->type = DNS_T_SPF; };

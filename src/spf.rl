@@ -1375,7 +1375,7 @@ oops:
 
 	parser->error.lc = *parser->p;
 
-	if (parser->p - parser->rdata >= (sizeof parser->error.near / 2))
+	if (parser->p - parser->rdata >= ((int)sizeof parser->error.near / 2))
 		part = parser->p - (sizeof parser->error.near / 2);
 	else
 		part = parser->rdata;
@@ -1384,7 +1384,7 @@ oops:
 	parser->error.rp = parser->p - parser->rdata;
 
 	memset(parser->error.near, 0, sizeof parser->error.near);
-	memcpy(parser->error.near, part, SPF_MIN(sizeof parser->error.near - 1, parser->pe - part));
+	memcpy(parser->error.near, part, SPF_MIN((int)sizeof parser->error.near - 1, parser->pe - part));
 
 	if (SPF_DEBUG) {
 		if (isgraph(parser->error.lc)) {
@@ -1984,7 +1984,7 @@ static inline int vm_indexof(struct spf_vm *vm, int p) {
 	if (spf_likely(p < 0))
 		p = vm->sp + p;
 
-	vm_assert(vm, p >= 0 && p < vm->sp, EFAULT);
+	vm_assert(vm, p >= 0 && (unsigned)p < vm->sp, EFAULT);
 
 	return p;
 } /* vm_indexof() */
@@ -2065,7 +2065,7 @@ static intptr_t vm_move(struct spf_vm *vm, int p) {
 	 * stack positions.)
 	 */
 	if (v == T_MEM) {
-		for (; i < vm->sp - 1; i++) {
+		for (; i < (int)vm->sp - 1; i++) {
 			if (vm->type[i + 1] == T_REF && vm->stack[i + 1] == v) {
 				vm->type[i + 1] = T_MEM;
 				t = T_REF;
@@ -2078,7 +2078,7 @@ static intptr_t vm_move(struct spf_vm *vm, int p) {
 		}
 	}
 
-	for (; i < vm->sp - 1; i++) {
+	for (; i < (int)vm->sp - 1; i++) {
 		vm->type[i]  = vm->type[i + 1];
 		vm->stack[i] = vm->stack[i + 1];
 	}
@@ -2387,7 +2387,7 @@ static void op_jmp(struct spf_vm *vm) {
 	vm_discard(vm, 2);
 
 	if (cond) {
-		vm_assert(vm, pc >= 0 && pc < vm->end, EFAULT);
+		vm_assert(vm, pc >= 0 && (unsigned)pc < vm->end, EFAULT);
 		vm->pc = pc;
 	} else
 		vm->pc++;
@@ -2401,7 +2401,7 @@ static void op_goto(struct spf_vm *vm) {
 	vm_discard(vm, 2);
 
 	if (cond) {
-		vm_assert(vm, pc >= 0 && pc < vm->end, EFAULT);
+		vm_assert(vm, pc >= 0 && (unsigned)pc < vm->end, EFAULT);
 		vm->pc = pc;
 	} else
 		vm->pc++;
