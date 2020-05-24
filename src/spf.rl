@@ -532,7 +532,7 @@ size_t spf_6top(char *dst, size_t lim, const struct in6_addr *ip, int flags) {
 		if (group[0]) {
 			len = spf_itox(tmp, sizeof tmp, group[0]);
 		} else
-			run++;
+			run = 1;
 
 		for (i = 1; i < 8; i++) {
 			if (group[i] || ran) {
@@ -544,7 +544,7 @@ size_t spf_6top(char *dst, size_t lim, const struct in6_addr *ip, int flags) {
 				tmp[len++] = ':';
 				len += spf_itox(&tmp[len], sizeof tmp - len, group[i]);
 			} else
-				run++;
+				run = 1;
 		}
 
 		if (run) {
